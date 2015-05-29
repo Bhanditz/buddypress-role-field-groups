@@ -102,7 +102,7 @@ class CFG_Setup {
 		}
 
 		foreach( (array) $_POST['cfg'] as $role => $groups ) {
-			$conditionals[ $role ] = array_map( 'absint', array_keys( $groups ) );
+			$conditionals[ sanitize_title( $role ) ] = array_map( 'absint', array_keys( $groups ) );
 		}
 
 		update_option( self::$_options_key, $conditionals );
