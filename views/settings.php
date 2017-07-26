@@ -48,8 +48,13 @@ foreach( $groups as $id => $group ) {
 
 	.groups table {
 		position: absolute;
-		bottom:   0;
+		top:      0;
 		left:     0;
+	}
+
+	.groups table th {
+		border:   none;
+        padding:  15px 15px 16px 15px;
 	}
 
 	.checkboxes {
@@ -85,6 +90,7 @@ foreach( $groups as $id => $group ) {
 				<div class="groups">
 					<table>
 						<tbody>
+						<tr><th>&nbsp</th></tr>
 						<?php foreach ( $groups as $group ) : ?>
 							<tr>
 								<td class="group"><?php echo $group->name; ?></td>
