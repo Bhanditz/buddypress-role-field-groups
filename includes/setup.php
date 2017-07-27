@@ -1,8 +1,8 @@
 <?php
 
-CFG_Setup::get_instance();
+RFG_Setup::get_instance();
 
-class CFG_Setup {
+class RFG_Setup {
 
 	/**
 	 * @var
@@ -12,15 +12,15 @@ class CFG_Setup {
 	/**
 	 * @var string
 	 */
-	public static $_options_key = 'cfg_conditional_groups';
+	public static $_options_key = 'rfg_role_groups';
 
 	/**
-	 * Only make one instance of the CFG_Setup
+	 * Only make one instance of the RFG_Setup
 	 *
-	 * @return CFG_Setup
+	 * @return RFG_Setup
 	 */
 	public static function get_instance() {
-		if ( ! self::$_instance instanceof CFG_Setup ) {
+		if ( ! self::$_instance instanceof RFG_Setup ) {
 			self::$_instance = new self();
 		}
 
@@ -40,31 +40,33 @@ class CFG_Setup {
 	/**
 	 * Customize the XProfile Field Groups.
 	 *
+     * Note that this does the opposite of what the original plugin does.
+     *
 	 * @param $groups
 	 *
 	 * @return array
 	 */
 	public function filter_org_groups( $groups ) {
-		$user = get_user_by( 'id', bp_displayed_user_id() );
-
+		$user = wp_get_current_user();
 		if ( empty( $user->roles[0] ) ) {
-			return $groups;
-		}
-
-		$role = $user->roles[0];
-
-		$remove_groups = cfg_get_role_groups( $role );
-
-
+            // PUBLIC
+            $role = '__public__';
+		} elseif ( $user->roles[0]  === 'administrator' ){
+            // Early exit. Admins can see all fields.
+            return $groups;
+        } else {
+            $role = $user->roles[0];
+        }
+        $keep_groups = rfg_get_role_groups( $role );
+        // Always display the base group
+        $keep_groups[] = 1;
 		foreach( $groups as $id => $group ) {
-			if ( in_array( $group->id, $remove_groups ) ) {
+			if ( ! in_array( $group->id, $keep_groups ) ) {
 				unset( $groups[ $id ] );
 			}
 		}
-
 		// re-key array
 		$groups = array_values( $groups );
-
 		return $groups;
 	}
 
@@ -74,10 +76,10 @@ class CFG_Setup {
 	public function add_plugin_page() {
 		add_submenu_page(
 			'users.php',
-			'Conditional Field Groups',
-			'Conditional Groups',
+			'Role Field Groups',
+			'Groups Display',
 			'manage_options',
-			'conditional-field-groups',
+			'role-field-groups',
 			array( $this, 'create_admin_page' )
 		);
 	}
@@ -86,26 +88,25 @@ class CFG_Setup {
 	 * Options page callback
 	 */
 	public function create_admin_page() {
-		include( CFG_PATH . 'views/settings.php' );
+		include( RFG_PATH . 'views/settings.php' );
 	}
 
 	public function save_settings() {
-		if ( empty( $_POST['cfg_save_nonce'] ) || ! wp_verify_nonce( $_POST['cfg_save_nonce'], 'cfg_save' ) ) {
+		if ( empty( $_POST['rfg_save_nonce'] ) || ! wp_verify_nonce( $_POST['rfg_save_nonce'], 'rfg_save' ) ) {
 			return;
 		}
 
-		$conditionals = array();
+		$roles = array();
 
-		if ( empty( $_POST['cfg'] ) ) {
-			update_option( self::$_options_key, $conditionals );
+		if ( empty( $_POST['rfg'] ) ) {
+			update_option( self::$_options_key, $roles );
 			return;
 		}
-
-		foreach( (array) $_POST['cfg'] as $role => $groups ) {
-			$conditionals[ sanitize_title( $role ) ] = array_map( 'absint', array_keys( $groups ) );
+		foreach( (array) $_POST['rfg'] as $role => $groups ) {
+			$roles[ sanitize_title( $role ) ] = array_map( 'absint', array_keys( $groups ) );
 		}
 
-		update_option( self::$_options_key, $conditionals );
+		update_option( self::$_options_key, $roles );
 
 	}
 
@@ -114,8 +115,8 @@ class CFG_Setup {
 /**
  * @return mixed|void
  */
-function cfg_get_conditional_map() {
-	return get_option( CFG_Setup::$_options_key, array() );
+function rfg_get_role_map() {
+	return get_option( RFG_Setup::$_options_key, array() );
 }
 
 /**
@@ -125,9 +126,8 @@ function cfg_get_conditional_map() {
  *
  * @return array
  */
-function cfg_get_role_groups( $role ) {
-	$map = cfg_get_conditional_map();
-
+function rfg_get_role_groups( $role ) {
+	$map = rfg_get_role_map();
 	if ( empty( $map[ $role ] ) ) {
 		return array();
 	}

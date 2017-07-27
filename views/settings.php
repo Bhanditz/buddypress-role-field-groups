@@ -9,10 +9,14 @@ unset( $roles['bbp_moderator'] );
 unset( $roles['bbp_participant'] );
 unset( $roles['bbp_spectator'] );
 unset( $roles['bbp_blocked'] );
+// Administrators can see all fields
+unset( $roles['administrator'] );
+// Pseudo-role for users who are not logged in
+$roles['__public__'] = 'PUBLIC';
 
 $roles = array_reverse( $roles );
 
-$map    = cfg_get_conditional_map();
+$map    = rfg_get_role_map();
 $groups = bp_xprofile_get_groups();
 
 // don't allow the base group to be removed from any profile. Bad things happen
@@ -74,16 +78,21 @@ foreach( $groups as $id => $group ) {
 </style>
 
 <div class="wrap">
-	<h2>BuddPress Conditional Profile Groups</h2>
+	<h2>BuddPress Role Profile Groups</h2>
 
-	<p>Check the boxes below to hide the BuddyPress Profile Group for the corresponding user role.</p>
+        <p>Check the boxes below to <b>show</b> the BuddyPress Profile Group to the corresponding user role when they view the site.</p>
+        <b>Note:</b>
+        <ol>
+            <li>Administrators can see all groups.</li>
+            <li>The &quot;PUBLIC&quot; role refers to viewers of the site who are not logged in, i.e. the general publlic</li>                                             <li>The &quot;Base&quot; group will always be displayed.</li>
+        </ol>
 
 	<?php if ( empty( $groups ) ) : ?>
 		<p>There are no Profile Field Groups</p>
 	<?php else : ?>
 		<form method="post" action="">
 
-			<?php wp_nonce_field( 'cfg_save', 'cfg_save_nonce' ); ?>
+			<?php wp_nonce_field( 'rfg_save', 'rfg_save_nonce' ); ?>
 			<?php submit_button(); ?>
 
 			<div class="container">
@@ -118,7 +127,7 @@ foreach( $groups as $id => $group ) {
 
 								<?php foreach ( $roles as $id => $role ) : ?>
 									<td>
-										<input type="checkbox" <?php checked( in_array( $group->id, cfg_get_role_groups( $id ) ) ); ?> name="cfg[<?php echo $id; ?>][<?php echo $group->id; ?>]" />
+										<input type="checkbox" <?php checked( in_array( $group->id, rfg_get_role_groups( $id ) ) ); ?> name="rfg[<?php echo $id; ?>][<?php echo $group->id; ?>]" />
 									</td>
 								<?php endforeach; ?>
 							</tr>
